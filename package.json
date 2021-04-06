@@ -1,0 +1,22 @@
+{
+  "name": "tweet-m1-money-supply",
+  "version": "1.0.0",
+  "description": "Tweet a line chart showing M1 money supply over time",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mtomsu/tweet-m1-money-supply.git"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Mark Tomsu",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^26.6.3",
+    "serverless": "^2.22.0",
+    "serverless-plugin-aws-alerts": "^1.6.1",
+    "serverless-prune-plugin": "^1.4.3",
+    "serverless-pseudo-parameters": "^2.5.0"
+  },
+  "dependencies": {}
+}

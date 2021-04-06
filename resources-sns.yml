@@ -1,0 +1,46 @@
+Resources:
+
+  SNSTopicAlarms:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: alarms
+      TopicName: ${self:provider.stage}-${self:service}-alarms
+      Subscription:
+        - Protocol: email
+          Endpoint: ${self:custom.environment.ALARM_RECIPIENT_EMAIL}
+
+  SNSTopicPolicyAlarms:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - Ref: SNSTopicAlarms
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAccountToPublish
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - sns:Publish
+            Resource:
+              Ref: SNSTopicAlarms
+            Condition:
+              StringEquals:
+                AWS:SourceOwner: "#{AWS::AccountId}"
+
+Outputs:
+
+  SNSTopicAlarmsARN:
+    Description: SNS topic ARN for alarms
+    Value:
+      Ref: SNSTopicAlarms
+    Export:
+      Name: ${self:provider.stage}-SNSTopicAlarmsARN
+
+  SNSTopicAlarmsName:
+    Description: SNS topic name for alarms
+    Value:
+      Fn::GetAtt: [ SNSTopicAlarms, TopicName ]
+    Export:
+      Name: ${self:provider.stage}-SNSTopicAlarmsName

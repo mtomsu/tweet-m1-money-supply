@@ -1,0 +1,21 @@
+TweetM1MoneySupply:
+  handler: functions/tweet-m1-money-supply/index.handler
+  name: ${self:provider.stage}-TweetM1MoneySupply
+  description: Retrieve a line chart showing M1 money supply over time and tweet it.
+  runtime: nodejs12.x
+  memorySize: 512
+  timeout: 15
+  events:
+    - schedule: cron(0 12 ? * 2 *) # Every Monday at 12:00 UTC.
+  environment:
+    REGION: ${self:provider.region}
+    SECRET_ID_TWITTER_CREDENTIALS: ${self:provider.stage}/twitter/m1-money-supply-credentials
+    STAGE: ${self:provider.stage}
+  alarms:
+    - name: functionAllFailures
+    #- name: functionDuration
+    #  threshold: 10000
+    - name: functionErrors
+  package:
+    include:
+      - functions/tweet-m1-money-supply/**

@@ -1,0 +1,132 @@
+service: tweet-m1-money-supply
+
+description: Serverless project for Twitter bot that tweets the M1 money supply.
+
+frameworkVersion: ">=2.1.0"
+
+plugins:
+  - serverless-plugin-aws-alerts
+  - serverless-prune-plugin
+  - serverless-pseudo-parameters
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'stg'}
+  region: ${opt:region, 'us-west-1'}
+  profile: ${self:provider.stage}
+  deploymentBucket:
+    name: ${self:custom.environment.NAMESPACE_PREFIX}-${self:provider.stage}-${self:provider.region}-${self:service}
+    blockPublicAccess: true
+    maxPreviousDeploymentArtifacts: ${self:custom.environment.NUMBER_OF_PREVIOUS_DEPLOYMENT_ARTIFACTS_TO_RETAIN}
+  stackName: ${self:custom.environment.NAMESPACE_PREFIX}-${self:provider.stage}-${self:service}
+  stackPolicy:
+    - Effect: Allow
+      Principal: "*"
+      Resource: "*"
+      Action: "Update:*"
+#    - Effect: Deny
+#      Principal: "*"
+#      Resource: "*"
+#      Action:
+#        - Update:Replace
+#        - Update:Delete
+#      Condition:
+#        StringEquals:
+#          ResourceType:
+#            - AWS::SecretsManager::Secret
+#            - AWS::SNS::Topic
+  individually: true
+  iamRoleStatements:
+    # SecretsManager permissions.
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource:
+        - Ref: SecretTwitterCredentials
+
+package:
+  individually: true
+  exclude:
+    - ./*.json
+    - ./*.lock
+    - ./*.md
+    - ./*.yml
+    - .git/**
+    - functions/**
+    - layers/**
+    - node_modules/**
+  include:
+    - package.json
+
+custom:
+  environment: ${file(./environment.yml):${self:provider.stage}}
+  namespace: m1
+
+  # serverless-prune-plugin config.
+  prune:
+    automatic: true
+    number: ${self:custom.environment.NUMBER_OF_LAMBDA_VERSIONS_TO_RETAIN}
+
+  # serverless-plugin-aws-alerts config.
+  alerts:
+    stages:
+      - stg
+      - prd
+    topics:
+      alarm:
+        topic: arn:aws:sns:${self:provider.region}:#{AWS::AccountId}:${self:provider.stage}-${self:service}-alarms
+    definitions:
+      functionInvocations:
+        namespace: "AWS/Lambda"
+        metric: Invocations
+        threshold: 10
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: missing
+      functionErrors:
+        namespace: "AWS/Lambda"
+        metric: Errors
+        threshold: 1
+        statistic: Maximum
+        period: 60
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: missing
+      functionDuration:
+        namespace: "AWS/Lambda"
+        metric: Duration
+        threshold: 5000
+        statistic: Maximum
+        period: 60
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: missing
+      functionThrottles:
+        namespace: "AWS/Lambda"
+        metric: Throttles
+        threshold: 1
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: missing
+      functionAllFailures:
+        metric: AllFailures
+        threshold: 1
+        statistic: Maximum
+        period: 60
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: "?unhandled ?Unhandled ?unexpected ?Unexpected ?Exception ?exception ?Error ?error ?Fail ?fail"
+    alarms:
+      - functionErrors
+      - functionAllFailures
+
+functions: ${file(./functions.yml)}
+
+resources:
+  - ${file(./resources-secrets.yml)}
+  - ${file(./resources-sns.yml)}

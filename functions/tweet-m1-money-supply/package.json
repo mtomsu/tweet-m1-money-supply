@@ -1,0 +1,17 @@
+{
+  "name": "tweet-m1-money-supply",
+  "version": "1.0.0",
+  "description": "Tweet a line chart showing M1 money supply over time",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Mark Tomsu",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "luxon": "^1.25.0",
+    "twitter": "^1.7.1",
+    "url-join": "^4.0.1"
+  }
+}
